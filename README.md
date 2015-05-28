@@ -2,4 +2,4 @@
 
 提交代码的同学注意：
 
-1. 每次不要提交 .classpath .settings .project .gitignore pom.xml文件或文件夹
+1. 不会被版本跟踪的文件： .classpath  .project  /target
