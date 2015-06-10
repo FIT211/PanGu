@@ -24,6 +24,7 @@ public class Pcap {
 	public Pcap(){};
 	
 	public Fields createFields() {
-        return new Fields("sec","pro","src","dst","len");
+        return new Fields("sec","pro","src","dst","len","ippacket");
     }
 }
+

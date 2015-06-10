@@ -1,18 +1,14 @@
 package com.nmlab.pangu.BasicStatistics.Bolts;
 
-import java.io.BufferedOutputStream;
-import com.nmlab.pangu.BasicStatistics.Helpers.Pcap;
-import jpcap.packet.IPPacket;
+//import java.io.BufferedOutputStream;
+//import com.nmlab.pangu.BasicStatistics.Helpers.Pcap;
+//import jpcap.packet.IPPacket;
 
 import java.math.BigInteger; 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.OutputStreamWriter;
-import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.util.Map;
 
+import java.util.Map;
+import backtype.storm.tuple.Fields;
+import backtype.storm.tuple.Values;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichBolt;
@@ -33,7 +29,7 @@ public class ProtocolBolt implements IRichBolt{
 	public long udpLen = 0;
 	public long icmpLen = 0;
 	public long igmpLen = 0;
-	FileWriter fw = null;
+	//FileWriter fw = null;
     
 	//private FileWriter fw= null;
 
@@ -46,10 +42,10 @@ public class ProtocolBolt implements IRichBolt{
 	public void execute(Tuple tuple) {
 		// TODO Auto-generated method stub
 		try {
-			fw = new FileWriter("D:\\开发工具\\eclipse-java-luna-SR2-win32-x86_64\\workspace\\pcapStorm\\protocal.txt",true);
+			//fw = new FileWriter("D:\\开发工具\\eclipse-java-luna-SR2-win32-x86_64\\workspace\\pcapStorm\\protocal.txt",true);
 			if(time == 0) 
 				time = (Long) tuple.getValueByField("sec");
-			if((Long) tuple.getValueByField("sec") - time == 1)
+			if((Long) tuple.getValueByField("sec") - time >= 1)
 			{
 				pro = (Integer) tuple.getValueByField("pro");
 				//System.out.println("pro"+pro);
@@ -65,12 +61,21 @@ public class ProtocolBolt implements IRichBolt{
 		            case 89:protocol = "OSPF";break;
 		            default:break;
 		         }
-				fw.write("time:"+time+"	TCP:"+tcpCount+"	"+tcpLen+"	UDP:"+udpCount+"	"+udpLen+"	ICMP:"+icmpCount+"	"+icmpLen+"\r\n");
+				//fw.write("time:"+time+"	TCP:"+tcpCount+"	"+tcpLen+"	UDP:"+udpCount+"	"+udpLen+"	ICMP:"+icmpCount+"	"+icmpLen+"\r\n");
 				//关键变量： time代表当前的时间片，xxCount代表协议分组数，xxLen代表协议吞吐量，单位byte
 				//接下来这些变量都会被重置，进入下一个时间片，请在这里进行操作
+				this.outputCollector.emit(createValues());
+				
 				tcpCount = 0;
+				udpCount = 0;
+				icmpCount = 0;
+				igmpCount = 0;
 				tcpLen = 0;
+				udpLen = 0;
+				icmpLen = 0;
+				igmpLen = 0;
 				time = (Long) tuple.getValueByField("sec");
+				
 			}
 			else {
 				pro = (Integer) tuple.getValueByField("pro");
@@ -88,8 +93,8 @@ public class ProtocolBolt implements IRichBolt{
 		            default:break;
 		        }
 			}
-			fw.close();
-			this.outputCollector.emit(tuple, tuple.getValues());
+			//fw.close();
+			
             
         } catch (Exception e) {
             
@@ -113,7 +118,7 @@ public class ProtocolBolt implements IRichBolt{
 
 	public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
 		// TODO Auto-generated method stub
-		outputFieldsDeclarer.declare(new Pcap().createFields());
+		outputFieldsDeclarer.declare(createFields());
 	}
 
 	public Map<String, Object> getComponentConfiguration() {
@@ -124,6 +129,15 @@ public class ProtocolBolt implements IRichBolt{
 	  public static String binary(Object object, int radix){  
 	        return new BigInteger(1, (byte[]) object).toString(radix);// 这里的1代表正数  
 	}  
-
+	public Fields createFields(){
+		return new Fields(
+				"tcplength",
+				"udplength",
+				"icmplength");
+	}
+	
+	public Values createValues(){
+		return new Values(tcpLen,udpLen,icmpLen);
+	}
 }
 

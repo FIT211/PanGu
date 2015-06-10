@@ -1,10 +1,19 @@
 package com.nmlab.pangu.BasicStatistics.Spouts;
 
 import java.io.BufferedReader;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.Arrays;
 import java.util.Map;
 
+import com.nmlab.pangu.BasicStatistics.Helpers.Application;
+import com.nmlab.pangu.BasicStatistics.Helpers.Http;
 import com.nmlab.pangu.BasicStatistics.Helpers.PacketCapturer;
 import com.nmlab.pangu.BasicStatistics.Helpers.Pcap;
 
@@ -17,10 +26,11 @@ import backtype.storm.utils.Utils;
 import jpcap.NetworkInterface;
 import jpcap.NetworkInterfaceAddress;
 import jpcap.packet.IPPacket;
+import jpcap.packet.TCPPacket;
+import jpcap.packet.UDPPacket;
 import jpcap.packet.Packet;
 import jpcap.JpcapCaptor;
 import jpcap.PacketReceiver;
-
 public class PcapSpout implements IRichSpout {
 
 	private SpoutOutputCollector outputCollector;
@@ -36,11 +46,15 @@ public class PcapSpout implements IRichSpout {
 	private int sampLen = 65535;
 	public int countPacket = 0;
 	
+	private Application application;
+	private Http[] http;
+	private int httptypecount=0;
     public PcapSpout(){};
-   
+    public Writer writer;
+    public DataOutputStream fos;
     public PcapSpout(String deviceName, int count, String filter, String srcFilename, String dstFilename, int sampLen){
     	this.deviceName = deviceName;
-    	this.count = count; //未使用，无效
+    	this.count = count; //鏈娇鐢紝鏃犳晥
     	this.filter = filter;
     	this.srcFilename = srcFilename;
     	this.dstFilename = dstFilename;
@@ -50,7 +64,7 @@ public class PcapSpout implements IRichSpout {
     }
     public PcapSpout(String deviceName, String count, String filter, String srcFilename, String dstFilename, String sampLen){
     	this.deviceName = deviceName;
-    	this.count = Integer.parseInt(count); //未使用，无效
+    	this.count = Integer.parseInt(count); //鏈娇鐢紝鏃犳晥
     	this.filter = filter;
     	this.srcFilename = srcFilename;
     	this.dstFilename = dstFilename;
@@ -58,7 +72,7 @@ public class PcapSpout implements IRichSpout {
     	if(Integer.parseInt(sampLen)<0)
             slen = 65535;
     	this.sampLen = slen;
-    	
+
     }
     
     /**
@@ -96,7 +110,7 @@ public class PcapSpout implements IRichSpout {
 			if(devices[i].name.equals(deviceName))
 				return devices[i];
 		}
-		return null;
+		return devices[4];
 	}
     
     
@@ -133,87 +147,79 @@ public class PcapSpout implements IRichSpout {
 	}
 
 	public void nextTuple() {
+		int flag=0;
 		// TODO Auto-generated method stub
-		//Utils.sleep(10000);//变慢的罪魁祸首
 		try {
-            //该方法从指定的目录中中读取符合条件的文件列表，并随机从中选择一个将其独占并返回文件名
-			/*
-			if( in != null){
-				String line;
-				int count=0;
-				while((line = in.readLine()) != null){
-					if(line.trim().length()>0){
-						count++;
-						this.outputCollector.emit(createValues(line));
-					}
-				}
-				System.out.println("There are "+count+" rows!");
-			}
-			else{
-				System.out.println("文件打开失败 in next tuple");
-			}
-			
-			*/
-			if(sampLen<0) sampLen = 65535;
-						
-				while(true){
-				  Packet packet=captor.getPacket();  
-				  //if some error occurred or EOF has reached, break the loop  
-				  if(packet==null){System.out.println("null");break;}
+			if(sampLen<0) sampLen = 65535;		
+			while(true){
+				Packet packet=captor.getPacket();  
+				//if some error occurred or EOF has reached, break the loop  
+				if(packet==null){
+					//System.out.println("null");
+					break;
+				  }
 				  //otherwise, print out the packet
-				    IPPacket ip = (IPPacket)packet;
-				    countPacket++;
-				    //System.out.println(countPacket++);
-		            /*String protocol = null;
-		            switch(new Integer(ip.protocol))
-		            {
-		            case 1:protocol = "ICMP";break;
-		            case 2:protocol = "IGMP";break;
-		            case 6:protocol = "TCP";break;
-		            case 8:protocol = "EGP";break;
-		            case 9:protocol = "IGP";break;
-		            case 17:protocol = "UDP";break;
-		            case 41:protocol = "IPv6";break;
-		            case 89:protocol = "OSPF";break;
-		            default:break;
-		            }
-		            
-		            System.out.print("timestamp:"+ip.sec+ "  ");
-		            System.out.print("protocal:" + protocol + "  ");
-		            System.out.print("src IP:" + ip.src_ip.getHostAddress() + "  ");
-		            System.out.print("dst IP:" + ip.dst_ip.getHostAddress() + "  ");
-		            System.out.println("length:" + ip.length + "  ");*/
-		            
-					this.outputCollector.emit(createValues(ip));
-					//this.outputCollector.ack(tuple);
-				}
-				
-			
-        } catch (Exception e) {
-            
-        }
+				  IPPacket ip = (IPPacket)packet;
+		          if(packet instanceof TCPPacket)
+		          {
+		        	  TCPPacket tcp=(TCPPacket)packet;
+		        	  this.outputCollector.emit(createValues(ip,tcp));
+		        	  break;
+		          }
+		          else if(packet instanceof UDPPacket)
+		          {
+		        	  UDPPacket udp=(UDPPacket)packet;
+		        	  this.outputCollector.emit(createValues(ip,udp));
+		        	  break;
+		          }
+		          else
+		          {
+		        	  this.outputCollector.emit(createValues(ip));
+		          }
+		       }
+			} catch (Exception e) {}
 	}
 
 	public void open(Map arg0, TopologyContext arg1, SpoutOutputCollector spoutOutputCollector) {
 		// TODO Auto-generated method stub
 		this.outputCollector = spoutOutputCollector;
+		this.application=new Application();
+		this.http=new Http[1000];
+		try {
+			this.fos =new DataOutputStream(new FileOutputStream("10_29.txt"));
+		} catch (FileNotFoundException e1) {
+			// TODO 鑷姩鐢熸垚鐨� catch 鍧�
+			e1.printStackTrace();
+		} catch (IOException e) {
+			// TODO 鑷姩鐢熸垚鐨� catch 鍧�
+			e.printStackTrace();
+		}
+		
+		/*for(int i=0;i<1000;i++)
+		{
+			this.http[i]=new Http();
+		}*/
+		//System.out.println("http[0].length:"+this.http[0].Getlength());
+		//this.http=new Http[1000];
         try {            
-            //读取HDFS文件的客户端，自己实现
+            //璇诲彇HDFS鏂囦欢鐨勫鎴风锛岃嚜宸卞疄鐜�
         	
         	/*
         	in = new BufferedReader(new FileReader("D:\\1.txt"));
         	if(in == null){
-        		System.out.println("文件打开失败");
+        		System.out.println("鏂囦欢鎵撳紑澶辫触");
         		System.exit(-1);
         	}*/
         	//pc = new PacketCapturer();
         //	captor = new JpcapCaptor();
         	if(srcFilename!=null){
+        		System.out.println("before open");
 				captor = JpcapCaptor.openFile(srcFilename);
+				System.out.println("after open");
         	}
         	else
         	{
-        		
+        		getNetworkInterfaces();
         		device = getDevice(deviceName);
         		System.out.println(device);
 				captor = JpcapCaptor.openDevice(device, sampLen, false, 20);
@@ -237,7 +243,7 @@ public class PcapSpout implements IRichSpout {
 		return null;
 	}
 	
-	public Values createValues(IPPacket ip) {
+	public Values createValues(IPPacket ip,TCPPacket tcp) {
 		long sec = ip.sec;
 		int pro = ip.protocol;
 		String src = ip.src_ip.getHostAddress();
@@ -249,8 +255,41 @@ public class PcapSpout implements IRichSpout {
                 pro,
                 src,
                 dst,
-                len
+                len,
+                tcp
         );
+	}
+	public Values createValues(IPPacket ip,UDPPacket udp) {
+		long sec = ip.sec;
+		int pro = ip.protocol;
+		String src = ip.src_ip.getHostAddress();
+		String dst = ip.dst_ip.getHostAddress();
+		long len = ip.length;
+		
+        return new Values(
+                sec,
+                pro,
+                src,
+                dst,
+                len,
+                udp
+        );
+	}
+    	public Values createValues(IPPacket ip) {
+    		long sec = ip.sec;
+    		int pro = ip.protocol;
+    		String src = ip.src_ip.getHostAddress();
+    		String dst = ip.dst_ip.getHostAddress();
+    		long len = ip.length;
+    		
+            return new Values(
+                    sec,
+                    pro,
+                    src,
+                    dst,
+                    len,
+                    ip
+            );
     }
 
 }
