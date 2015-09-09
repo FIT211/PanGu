@@ -38,7 +38,16 @@
 	    <version>2.6.2</version>
 	    <type>jar</type>
 	    <scope>compile</scope>
-	</dependency>	
+	</dependency>
+	<dependency>
+    	<groupId>com.nmlab.jnetpcap</groupId>
+    	<artifactId>jnetpcap</artifactId>
+    	<type>jar</type>
+    	<version>1.4</version>
+    	<scope>system</scope> 
+    	<systemPath>C:\Users\Di\EclipseWorkspace\pangu\libs\jnetpcap.jar</systemPath>
+	</dependency>
+		
   </dependencies>
  
   <build>
