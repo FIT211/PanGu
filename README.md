@@ -1,5 +1,5 @@
 # PanGu
 
-提交代码的同学注意：
-
-1. 不会被版本跟踪的文件： .classpath  .project  /target
+使用方法：
+1. 修改pom.xml中jnetpcap依赖路径，改为{path-to-your-pangu}/libs/jnetpcap.jar
+2. 运行时需要加上  --Djava.library.path={path-to-your-pangu}/libs
