@@ -41,11 +41,11 @@
 	</dependency>
 	<dependency>
     	<groupId>com.nmlab.jnetpcap</groupId>
-    	<artifactId>jnetpcap</artifactId>
+    	<artifactId>jnetpcap-64</artifactId>
     	<type>jar</type>
     	<version>1.4</version>
     	<scope>system</scope> 
-    	<systemPath>C:\Users\Di\EclipseWorkspace\pangu\libs\jnetpcap.jar</systemPath>
+    	<systemPath>C:\Users\Di\EclipseWorkspace\pangu\libs\windows64\jnetpcap.jar</systemPath>
 	</dependency>
 		
   </dependencies>
