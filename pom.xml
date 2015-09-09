@@ -38,8 +38,7 @@
 	    <version>2.6.2</version>
 	    <type>jar</type>
 	    <scope>compile</scope>
-	</dependency>
-
+	</dependency>	
   </dependencies>
  
   <build>
