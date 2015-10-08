@@ -18,8 +18,6 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
-
-
 public class PcapSpout4jnetpcap implements IRichSpout {
 
 	private SpoutOutputCollector outputCollector;
@@ -69,13 +67,15 @@ public class PcapSpout4jnetpcap implements IRichSpout {
 			System.err.printf("Can��t read list of devices, error is %s", errbuf.toString());
 			return null;
 		}
-		int i = 0,chooseid=3;
+		int i = 0,chooseid=0;
+		System.out.printf("Next is NIC list\n");
 		for (PcapIf device : alldevs) {
 			String description =(device.getDescription() != null) ? device.getDescription(): "No description available";
 			if(deviceName!=null && deviceName!="" && device.getName().equals(deviceName))
 				chooseid=i;
 			System.out.printf("#%d: %s [%s]\n", i++, device.getName(), description);
 		}
+		System.out.printf("There are total %d nics。We choose %d th nic\n",i,chooseid);
 		return alldevs.get(chooseid);
     }
 
